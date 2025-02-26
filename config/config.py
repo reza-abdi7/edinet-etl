@@ -14,10 +14,11 @@ class Config(BaseSettings):
     target_doc_types: List[str]
     start_date_str: str
     end_date_str: str
-    request_rate_limit: float
+    request_per_second: float
     max_retries: int
     retry_delay: float
     max_concurrent_requests: int
+    companies_to_get: int
 
 
 config = Config()
