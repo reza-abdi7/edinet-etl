@@ -1,15 +1,17 @@
 import logging
 import os
 from datetime import datetime
+
 from tqdm import tqdm
-from config.config import config
 
 # Create a logger for the application
 logger = logging.getLogger('edinet')
 logger.setLevel(logging.INFO)  # Changed back to INFO as default level
 
 # Formatter for logging messages - simplified but informative
-formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S')
+formatter = logging.Formatter(
+    '[%(asctime)s] %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S'
+)
 
 # Create log directory in root if it doesn't exist
 log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'log')
@@ -40,7 +42,9 @@ class TqdmLoggingHandler(logging.Handler):
 # Console handler using tqdm-compatible handler
 console_handler = TqdmLoggingHandler()
 console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.WARNING)  # Only WARNING and above will be shown on console.
+console_handler.setLevel(
+    logging.WARNING
+)  # Only WARNING and above will be shown on console.
 logger.addHandler(console_handler)
 
 # Remove other handlers to avoid duplication
