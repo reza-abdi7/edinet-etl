@@ -79,10 +79,14 @@ def parse_csv_file(file_path: str) -> pd.DataFrame:
 
     df = pd.read_csv(file_path, sep='\t', encoding='utf-16')
 
-    # Extract revenue data (rows 1-6 contain historical revenue data)
-    revenue_data = df[1:6].copy()
-    mask = df['要素ID'] == 'jpdei_cor:CurrentFiscalYearEndDateDEI'
-    fiscal_end_str = df.loc[mask, '値'].iloc[0]
+    # filter for revenue, the second row starts with revenue values, due to inconsistency in naming, filter based on the name of second row.
+    revenue_mask = df.loc[1].get('要素ID')
+    df_revenue = df[df['要素ID'] == revenue_mask]
+
+    # Extract revenue data (rows 1-6 contain historical revenue data), now even if there is less than 5 rows for a company, it will be handled
+    revenue_data = df_revenue[1:6].copy()
+    year_mask = df['要素ID'] == 'jpdei_cor:CurrentFiscalYearEndDateDEI'
+    fiscal_end_str = df.loc[year_mask, '値'].iloc[0]
     fiscal_end_date = pd.to_datetime(fiscal_end_str)
     fiscal_year = fiscal_end_date.year
     if len(revenue_data) == 0:
@@ -165,7 +169,7 @@ def transform_financial_data(
     if file_path.endswith('.csv'):
         revenue_data, fiscal_year = parse_csv_file(file_path)
     elif file_path.endswith('.xbrl'):
-        revenue_data = parse_xbrl_file(file_path)
+        revenue_data, fiscal_year = parse_xbrl_file(file_path)
     else:
         logger.info(f'Unsupported file format: {file_path}')
         return pd.DataFrame()
@@ -179,7 +183,6 @@ def transform_financial_data(
             continue
         actual_year = fiscal_year + year_offset
 
-        # Attempt to convert revenue to integer, skip if invalid
         try:
             revenue_int = int(row['値'])
         except ValueError:

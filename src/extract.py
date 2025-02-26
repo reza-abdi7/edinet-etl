@@ -13,13 +13,8 @@ from .utils.helper import process_document_response
 from .utils.logger import logger
 
 # Create a global session with rate limiting applied.
-# Here, we convert the delay (in seconds) from config.request_rate_limit into calls per second.
-# For example, if config.request_rate_limit == 1, then we allow 1 call per second.
-requests_per_second = (
-    1.0 / config.request_rate_limit if config.request_rate_limit > 0 else 1
-)
 session = Session()
-adapter = LimiterAdapter(per_second=requests_per_second)
+adapter = LimiterAdapter(per_second=config.request_per_second)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
 
@@ -50,14 +45,14 @@ def extract_companies(csv_file=config.csv_file):
         df = df.dropna(subset=['Submitter Name（alphabetic）'])
 
         # Exclude specified industries
-        industry_exclude = [
-            'Services',
-            'Real Estate',
-            'Securities & Commodity Futures',
-            'Banks',
-            'Insurance',
-        ]
-        df = df[~df["Submitter's industry"].isin(industry_exclude)]
+        # industry_exclude = [
+        #     'Services',
+        #     'Real Estate',
+        #     'Securities & Commodity Futures',
+        #     'Banks',
+        #     'Insurance',
+        # ]
+        # df = df[~df["Submitter's industry"].isin(industry_exclude)]
         df.reset_index(drop=True, inplace=True)
 
         tqdm.write(
@@ -157,7 +152,7 @@ def filter_documents(documents, doc_types=config.target_doc_types):
     return filtered_docs
 
 
-def get_document_by_id(doc_info):
+def get_document_by_id(doc_info: dict) -> str:
     """
     Retrieve and process document based on document info dictionary.
     Args:
@@ -186,10 +181,13 @@ def get_document_by_id(doc_info):
     return process_document_response(response.content, doc_info)
 
 
-def download_documents(doc_list):
+def download_documents(doc_list: list, companies_to_get: int = None):
     """
     Download multiple documents sequentially with rate limiting.
     """
+    if companies_to_get is not None:
+        doc_list = doc_list[:companies_to_get]
+
     downloaded_files = []
 
     # Create progress bar

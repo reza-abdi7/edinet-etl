@@ -23,7 +23,9 @@ def main():
     filtered_doc_list = filter_documents(list_docs, doc_types=config.target_doc_types)
 
     # 4. download filtered documents
-    downloaded_files = download_documents(doc_list=filtered_doc_list)
+    downloaded_files = download_documents(
+        doc_list=filtered_doc_list, companies_to_get=config.companies_to_get
+    )
 
     # 5. transform and Process all financial documents into a single DataFrame
     df_result = process_financial_documents(downloaded_files, company_info)
