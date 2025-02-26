@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file = "settings.env", env_file_encoding="utf-8"
+        env_file = "config/settings.env", env_file_encoding="utf-8"
     )
     api_key: str
     base_url: str
