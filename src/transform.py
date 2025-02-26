@@ -65,11 +65,14 @@ def parse_csv_file(file_path: str) -> pd.DataFrame:
 
     # Extract revenue data (rows 1-6 contain historical revenue data)
     revenue_data = df[1:6].copy()
-
+    mask = df['要素ID'] == "jpdei_cor:CurrentFiscalYearEndDateDEI"
+    fiscal_end_str = df.loc[mask, '値'].iloc[0]
+    fiscal_end_date = pd.to_datetime(fiscal_end_str)
+    fiscal_year = fiscal_end_date.year
     if len(revenue_data) == 0:
         logger.info(f"No revenue data found in CSV file: {os.path.basename(file_path)}")
 
-    return revenue_data
+    return revenue_data, fiscal_year
 
 
 def select_best_files_by_company(file_paths: list) -> list:
@@ -116,7 +119,6 @@ def transform_financial_data(file_path: str, company_info: pd.DataFrame) -> pd.D
         DataFrame with columns: [year, companyname, industryclassification, geonameen, revenue, revenue_unit]
     """
     filename = os.path.basename(file_path)
-    doc_year = int(filename.split('_')[1][:4])
     edinet_code = filename.split('_')[0]
 
     edinet_codes_set = set(company_info['EDINET Code'])
@@ -137,7 +139,7 @@ def transform_financial_data(file_path: str, company_info: pd.DataFrame) -> pd.D
 
     # Determine how to parse based on extension
     if file_path.endswith('.csv'):
-        revenue_data = parse_csv_file(file_path)
+        revenue_data, fiscal_year = parse_csv_file(file_path)
     elif file_path.endswith('.xbrl'):
         revenue_data = parse_xbrl_file(file_path)
     else:
@@ -151,7 +153,7 @@ def transform_financial_data(file_path: str, company_info: pd.DataFrame) -> pd.D
         if year_offset is None:
             logger.info(f"Skipping unknown year indicator: {relative_year}")
             continue
-        actual_year = doc_year + year_offset
+        actual_year = fiscal_year + year_offset
 
         # Attempt to convert revenue to integer, skip if invalid
         try:
@@ -161,7 +163,7 @@ def transform_financial_data(file_path: str, company_info: pd.DataFrame) -> pd.D
             continue
 
         record = {
-            'year': str(actual_year),
+            'year': actual_year,
             'companyname': company_data['Submitter Name（alphabetic）'].iloc[0],
             'industryclassification': company_data["Submitter's industry"].iloc[0],
             'geonameen': 'Japan',
