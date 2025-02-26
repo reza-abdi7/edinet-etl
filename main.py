@@ -28,7 +28,7 @@ def main():
         return
 
     # 6. Load and Export the final DataFrame to a CSV file
-    load_to_csv(df_result, output_path="output")
+    load_to_csv(df_result, output_path="output", file_name="japan_company_data")
 
     logger.info("ETL pipeline completed successfully.")
 
