@@ -84,7 +84,7 @@ def parse_csv_file(file_path: str) -> pd.DataFrame:
     df_revenue = df[df['要素ID'] == revenue_mask]
 
     # Extract revenue data (rows 1-6 contain historical revenue data), now even if there is less than 5 rows for a company, it will be handled
-    revenue_data = df_revenue[1:6].copy()
+    revenue_data = df_revenue[:5].copy()
     year_mask = df['要素ID'] == 'jpdei_cor:CurrentFiscalYearEndDateDEI'
     fiscal_end_str = df.loc[year_mask, '値'].iloc[0]
     fiscal_end_date = pd.to_datetime(fiscal_end_str)
