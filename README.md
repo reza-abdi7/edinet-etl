@@ -48,7 +48,7 @@ in the bottom of the page
 ## ETL Pipeline Diagram / Workflow
 ### ETL Steps
 
-![ETL Pipeline Diagram](data\etl_diagram.png)
+![ETL Pipeline Diagram](data/etl_diagram.png)
 
 
 1. **Extract**:
