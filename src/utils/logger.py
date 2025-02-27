@@ -1,26 +1,22 @@
 import logging
-import os
 from datetime import datetime
+from pathlib import Path
 
 from tqdm import tqdm
 
-# Create a logger for the application
-logger = logging.getLogger('edinet')
-logger.setLevel(logging.INFO)  # Changed back to INFO as default level
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = PROJECT_ROOT / 'log'
+LOG_DIR.mkdir(parents=True, exist_ok=True)  # Ensure log directory exists
 
-# Formatter for logging messages - simplified but informative
+logger = logging.getLogger('edinet')
+logger.setLevel(logging.INFO)
+
 formatter = logging.Formatter(
     '[%(asctime)s] %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S'
 )
 
-# Create log directory in root if it doesn't exist
-log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'log')
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+log_file = LOG_DIR / f"edinet_{datetime.now().strftime('%Y%m%d')}.log"
 
-# Regular log file
-current_date = datetime.now().strftime('%Y%m%d')
-log_file = os.path.join(log_dir, f'edinet_{current_date}.log')
 file_handler = logging.FileHandler(log_file, encoding='utf-8')
 file_handler.setFormatter(formatter)
 file_handler.setLevel(logging.INFO)
