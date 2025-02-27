@@ -1,6 +1,7 @@
 import random
 import time
 from datetime import datetime, timedelta
+from typing import List
 
 import pandas as pd
 from requests import Session
@@ -19,10 +20,14 @@ session.mount('http://', adapter)
 session.mount('https://', adapter)
 
 
-def extract_companies(csv_file=config.csv_file):
+def extract_companies(csv_file: str = config.csv_file) -> pd.DataFrame:
     """
     Extract company information from the CSV file.
     Note that the file is downloaded from EDINET website.
+    Args:
+        csv_file (str): Path to the CSV file.
+    Returns:
+        pd.DataFrame: DataFrame containing the extracted company information.
     """
     try:
         # Read the CSV file
@@ -64,27 +69,41 @@ def extract_companies(csv_file=config.csv_file):
         raise
 
 
-def get_documents_by_date(date_str):
+def get_documents_by_date(date_str: str) -> dict:
+    """Get documents for a specific date using a sequential request with rate limiting.
+
+    Args:
+        date_str (str): Date in format 'YYYY-MM-DD'
+
+    Returns:
+        dict: Documents for the date
+    """
     url = f'{config.base_url}/documents.json'
     params = {'date': date_str, 'type': '2', 'Subscription-Key': config.api_key}
+
     # Using the session with the rate limiting adapter
     response = session.get(url, params=params)
     response.raise_for_status()
     return response.json()
 
 
-def get_documents_by_date_range(start_date, end_date):
+def get_documents_by_date_range(start_date: str, end_date: str) -> List[dict]:
     """
     Get documents for a date range using sequential requests with rate limiting.
+
+    Args:
+        start_date (str): Start date in format 'YYYY-MM-DD'
+        end_date (str): End date in format 'YYYY-MM-DD'
+
+    Returns:
+        List[dict]: List of documents for the date range
     """
-    # Convert string inputs to datetime objects if necessary.
     date_format = '%Y-%m-%d'
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, date_format)
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, date_format)
 
-    # Generate all dates we need to fetch
     dates = []
     current_date = start_date
     while current_date <= end_date:
@@ -100,9 +119,6 @@ def get_documents_by_date_range(start_date, end_date):
     )
 
     for date_str in dates:
-        # The session's adapter automatically enforces the rate limit, so no need to sleep manually.
-
-        # Fetch with retry logic
         for attempt in range(config.max_retries + 1):
             try:
                 response_data = get_documents_by_date(date_str)
@@ -113,9 +129,7 @@ def get_documents_by_date_range(start_date, end_date):
 
             except Exception as e:
                 if attempt < config.max_retries:
-                    # Wait before retrying with exponential backoff
                     retry_wait = config.retry_delay * (2**attempt)
-                    # Add jitter to avoid thundering herd problem
                     retry_wait = retry_wait * (0.1 + random.random())
                     logger.warning(
                         f'Retry {attempt+1}/{config.max_retries} for {date_str} after {retry_wait:.2f}s'
@@ -126,7 +140,6 @@ def get_documents_by_date_range(start_date, end_date):
                         f'Failed to fetch documents for {date_str} after {config.max_retries} retries: {e}'
                     )
 
-        # Update progress
         progress_bar.update(1)
 
     progress_bar.close()
@@ -135,12 +148,9 @@ def get_documents_by_date_range(start_date, end_date):
 
 def filter_documents(documents, doc_types=config.target_doc_types):
     companies = extract_companies(csv_file=config.csv_file)
-    edinet_codes = set(
-        companies['EDINET Code']
-    )  # Using a set for more efficient lookups
+    edinet_codes = set(companies['EDINET Code'])
     filtered_docs = []
 
-    # Use tqdm for progress visualization
     with tqdm(
         total=len(documents), desc='Filtering documents', unit='doc'
     ) as progress_bar:
@@ -163,7 +173,6 @@ def get_document_by_id(doc_info: dict) -> str:
     doc_id = doc_info['docID']
     url = f'{config.base_url}/documents/{doc_id}'
 
-    # Determine the file type based on available flags
     if doc_info.get('csvFlag') == '1':
         file_type = '5'  # CSV
         logger.info(f'Retrieving CSV document for {doc_id}')
@@ -181,20 +190,25 @@ def get_document_by_id(doc_info: dict) -> str:
     return process_document_response(response.content, doc_info)
 
 
-def download_documents(doc_list: list, companies_to_get: int = None):
+def download_documents(doc_list: list, companies_to_get: int = None) -> list:
     """
     Download multiple documents sequentially with rate limiting.
+
+    Args:
+        doc_list (list): List of document IDs to download.
+        companies_to_get (int): Number of companies to download. If None, all documents will be downloaded.
+
+    Returns:
+        list: List of paths to the downloaded files.
     """
     if companies_to_get is not None:
         doc_list = doc_list[:companies_to_get]
 
     downloaded_files = []
 
-    # Create progress bar
     progress_bar = tqdm(total=len(doc_list), desc='Downloading documents', unit='doc')
 
     for doc in doc_list:
-        # Download with retry logic
         for attempt in range(config.max_retries + 1):
             try:
                 result = get_document_by_id(doc)
@@ -204,9 +218,7 @@ def download_documents(doc_list: list, companies_to_get: int = None):
 
             except Exception as e:
                 if attempt < config.max_retries:
-                    # retrying with exponential backoff
                     retry_wait = config.retry_delay * (2**attempt)
-                    # jitter to avoid thundering herd problem
                     retry_wait = retry_wait * (0.5 + random.random())
                     tqdm.write(
                         f"Retrying download for {doc['docID']} (attempt {attempt + 2}) after {retry_wait:.2f}s"
@@ -217,7 +229,6 @@ def download_documents(doc_list: list, companies_to_get: int = None):
                         f"Failed to download document {doc['docID']} after {config.max_retries} retries: {e}"
                     )
 
-        # Update progress
         progress_bar.update(1)
 
     progress_bar.close()

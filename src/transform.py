@@ -8,19 +8,24 @@ from tqdm import tqdm
 from .utils.logger import logger
 
 
-def parse_xbrl_file(file_path: str) -> pd.DataFrame:
+def parse_xbrl_file(file_path: str) -> tuple[pd.DataFrame, int]:
     """
     Parse XBRL file to extract revenue data.
     The revenue data appears right after the NumberOfSubmissionDEI element.
-
     We keep a progress bar to track progress, but rely on logger for messages.
+
+    Args:
+        file_path (str): Path to the XBRL file to be parsed.
+
+    Returns:
+        tuple[pd.DataFrame, int]: A tuple containing the extracted revenue data and the current fiscal year.
     """
     logger.info(f'Extracting data from {os.path.basename(file_path)}...')
 
     tree = ET.parse(file_path)
     root = tree.getroot()
 
-    # XBRL uses namespaces, we need to handle them
+    # XBRL uses namespaces
     namespaces = dict(
         [node for _, node in ET.iterparse(file_path, events=['start-ns'])]
     )
@@ -38,7 +43,7 @@ def parse_xbrl_file(file_path: str) -> pd.DataFrame:
                     date_str = elem.text
                     date_obj = pd.to_datetime(date_str).date()
                     fiscal_year = date_obj.year
-                    break  # Found it, we can stop
+                    break
                 except Exception as e:
                     logger.info(
                         f"Failed to parse fiscal year end date '{elem.text}' in {file_path}: {e}"
@@ -69,11 +74,17 @@ def parse_xbrl_file(file_path: str) -> pd.DataFrame:
     return pd.DataFrame(records), fiscal_year
 
 
-def parse_csv_file(file_path: str) -> pd.DataFrame:
+def parse_csv_file(file_path: str) -> tuple[pd.DataFrame, int]:
     """
     Parse CSV file to extract revenue data.
     The first 5 rows contain historical revenue data.
     We keep a progress bar to track progress, but rely on logger for messages.
+
+    Args:
+        file_path (str): Path to the CSV file to be parsed.
+
+    Returns:
+        tuple[pd.DataFrame, int]: A tuple containing the extracted revenue data and the current fiscal year.
     """
     logger.info(f'Extracting data from {os.path.basename(file_path)}...')
 
@@ -165,7 +176,6 @@ def transform_financial_data(
         'Prior4YearDuration': -4,
     }
 
-    # Determine how to parse based on extension
     if file_path.endswith('.csv'):
         revenue_data, fiscal_year = parse_csv_file(file_path)
     elif file_path.endswith('.xbrl'):
@@ -232,7 +242,6 @@ def process_financial_documents(
         logger.info('No valid data frames to combine')
         return pd.DataFrame()
 
-    # Show progress bar for big merges
     if len(dfs) > 100:
         with tqdm(total=1, desc='Combining results', unit='operation') as pbar:
             result_df = pd.concat(dfs, ignore_index=True)

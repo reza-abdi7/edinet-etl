@@ -7,7 +7,7 @@ from config.config import config
 from .logger import logger
 
 
-def cleanup_temp_dir(doc_id):
+def cleanup_temp_dir(doc_id: str) -> bool:
     """
     Cleanup temporary directory for a document if it exists.
 

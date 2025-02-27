@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LOG_DIR = PROJECT_ROOT / 'log'
-LOG_DIR.mkdir(parents=True, exist_ok=True)  # Ensure log directory exists
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 logger = logging.getLogger('edinet')
 logger.setLevel(logging.INFO)
@@ -28,7 +28,6 @@ class TqdmLoggingHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            # Use tqdm.write which is compatible with progress bars
             tqdm.write(msg)
             self.flush()
         except Exception:
@@ -38,9 +37,7 @@ class TqdmLoggingHandler(logging.Handler):
 # Console handler using tqdm-compatible handler
 console_handler = TqdmLoggingHandler()
 console_handler.setFormatter(formatter)
-console_handler.setLevel(
-    logging.WARNING
-)  # Only WARNING and above will be shown on console.
+console_handler.setLevel(logging.WARNING)
 logger.addHandler(console_handler)
 
 # Remove other handlers to avoid duplication

@@ -12,6 +12,10 @@ def load_to_csv(df: pd.DataFrame, output_path: str, file_name: str) -> None:
     Args:
         df: The final, transformed pandas DataFrame containing the financial data
         output_path: The path to the CSV file to be written
+        file_name: The name of the CSV file to be written
+
+    Returns:
+        None
     """
     if df.empty:
         logger.warning('Attempted to load an empty DataFrame to CSV. Aborting.')
