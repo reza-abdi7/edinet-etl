@@ -13,7 +13,7 @@ This pipeline extracts financial data for Japanese listed companies from the EDI
 - **API Documentation**: [EDINET API Documentation Link](https://disclosure2dl.edinet-fsa.go.jp/guide/static/disclosure/download/ESE140206.zip) (only in Japenese)
 - **EDINET Codes (official)**: [EDINET Code Search](https://disclosure2.edinet-fsa.go.jp/weee0020.aspx)
 in the bottom of the page
-![alt text](data\image.png)
+![alt text](data/image.png)
 
 ## Scope
 
@@ -48,7 +48,7 @@ in the bottom of the page
 ## ETL Pipeline Diagram / Workflow
 ### ETL Steps
 
-![ETL Pipeline Diagram](data\etl_diagram.png)
+![ETL Pipeline Diagram](data/etl_diagram.png)
 
 
 1. **Extract**:
@@ -108,7 +108,8 @@ The pipeline uses two environment files:
 - `config/settings.env`: General configuration settings
 - `.env`: Secret API keys and credentials
 
-Create an API key by signing up 
+Create an API key by signing up by provided links at the top.
+Create an Environment file ".env" (exact same name) and paste the API key as a variable "API_KEY"
 
 ## Configuration
 
