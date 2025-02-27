@@ -13,7 +13,7 @@ This pipeline extracts financial data for Japanese listed companies from the EDI
 - **API Documentation**: [EDINET API Documentation Link](https://disclosure2dl.edinet-fsa.go.jp/guide/static/disclosure/download/ESE140206.zip) (only in Japenese)
 - **EDINET Codes (official)**: [EDINET Code Search](https://disclosure2.edinet-fsa.go.jp/weee0020.aspx)
 in the bottom of the page
-![alt text](data\image.png)
+![alt text](data/image.png)
 
 ## Scope
 
