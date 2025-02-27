@@ -108,7 +108,8 @@ The pipeline uses two environment files:
 - `config/settings.env`: General configuration settings
 - `.env`: Secret API keys and credentials
 
-Create an API key by signing up 
+Create an API key by signing up by provided links at the top.
+Create an Environment file ".env" (exact same name) and paste the API key as a variable "API_KEY"
 
 ## Configuration
 
