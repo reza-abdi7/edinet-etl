@@ -1,5 +1,6 @@
-from typing import List
-
+from typing import List, Optional, Any
+from pydantic import Field
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +23,14 @@ class Config(BaseSettings):
     max_retries: int
     retry_delay: float
     max_concurrent_requests: int
-    companies_to_get: int
+    companies_to_get: Optional[int] = None
+
+    @field_validator("companies_to_get", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, value: Any) -> Any:
+        if value == "":
+            return None
+        return value
 
 
 config = Config()

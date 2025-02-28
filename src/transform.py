@@ -1,6 +1,8 @@
 import os
 import re
 import xml.etree.ElementTree as ET
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
 
 import pandas as pd
 from tqdm import tqdm
@@ -36,6 +38,7 @@ def parse_xbrl_file(file_path: str) -> tuple[pd.DataFrame, int]:
     elements = list(root.iter())
     total_elements = len(elements)
 
+    fiscal_year = None
     for elem in elements:
         if elem.tag.endswith('CurrentPeriodEndDateDEI'):
             if elem.text:
@@ -214,39 +217,48 @@ def transform_financial_data(
     return pd.DataFrame(records)
 
 
-def process_financial_documents(
-    file_paths: list, company_info: pd.DataFrame
+async def process_financial_documents_concurrent(
+        file_paths: list,
+        company_info: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    Process multiple financial documents and combine them into a single DataFrame.
+    """Process multiple financial documents concurrently using a process pool and combine them into a single DataFrame.
+    this uses loop.run_in_executor to offload CPU-bound transformation tasks to separate processes.
 
     Args:
-        file_paths: List of paths to financial documents
-        company_info: DataFrame containing company information with EDINET Code column
+        file_paths (list): List of file paths to process.
+        company_info (pd.DataFrame): DataFrame containing company information.
+
     Returns:
-        Combined DataFrame with all financial data
+        pd.DataFrame: A DataFrame containing the processed financial data.
     """
     selected_files = select_best_files_by_company(file_paths)
 
-    dfs = []
+    executor = ProcessPoolExecutor()
+    loop = asyncio.get_running_loop()
+    tasks = []
+
     with tqdm(
-        total=len(selected_files), desc='Processing files', unit='file'
+        total=len(selected_files),
+        desc='Processing files',
+        unit='file'
     ) as progress_bar:
-        for file_path in selected_files:
-            df = transform_financial_data(file_path, company_info)
-            if not df.empty:
-                dfs.append(df)
+        for fp in selected_files:
+            task = loop.run_in_executor(executor, transform_financial_data, fp, company_info)
+            tasks.append(task)
+
+        dfs = []
+        for future in asyncio.as_completed(tasks):
+            df = await future
+            dfs.append(df)
             progress_bar.update(1)
+
+    executor.shutdown()
+
+    dfs = [df for df in dfs if not df.empty]
 
     if not dfs:
         logger.info('No valid data frames to combine')
         return pd.DataFrame()
-
-    if len(dfs) > 100:
-        with tqdm(total=1, desc='Combining results', unit='operation') as pbar:
-            result_df = pd.concat(dfs, ignore_index=True)
-            pbar.update(1)
-    else:
-        result_df = pd.concat(dfs, ignore_index=True)
-
+    
+    result_df = pd.concat(dfs, ignore_index=True)
     return result_df
